@@ -1,0 +1,180 @@
+import { useEffect, useRef, useState } from 'react';
+import L from 'leaflet';
+import 'leaflet/dist/leaflet.css';
+import type { Lampadaire } from '@/types/database';
+import { Button } from '@/components/ui/button';
+import { Locate } from 'lucide-react';
+
+interface LampadaireMapProps {
+  lampadaires: Lampadaire[];
+  onLampadaireClick?: (lampadaire: Lampadaire) => void;
+  selectedLampadaire?: Lampadaire | null;
+  showUserLocation?: boolean;
+}
+
+export default function LampadaireMap({
+  lampadaires,
+  onLampadaireClick,
+  selectedLampadaire,
+  showUserLocation = true,
+}: LampadaireMapProps) {
+  const mapContainer = useRef<HTMLDivElement>(null);
+  const map = useRef<L.Map | null>(null);
+  const markersRef = useRef<L.Marker[]>([]);
+  const userMarkerRef = useRef<L.Marker | null>(null);
+  const [userLocation, setUserLocation] = useState<[number, number] | null>(null);
+
+  // Initialize map
+  useEffect(() => {
+    if (!mapContainer.current || map.current) return;
+
+    map.current = L.map(mapContainer.current, {
+      center: [48.8566, 2.3522], // Paris
+      zoom: 13,
+      zoomControl: true,
+    });
+
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+    }).addTo(map.current);
+
+    return () => {
+      if (map.current) {
+        map.current.remove();
+        map.current = null;
+      }
+    };
+  }, []);
+
+  // Update markers when lampadaires change
+  useEffect(() => {
+    if (!map.current) return;
+
+    // Remove existing markers
+    markersRef.current.forEach(marker => marker.remove());
+    markersRef.current = [];
+
+    // Add new markers
+    lampadaires.forEach((lampadaire) => {
+      const markerColor = lampadaire.status === 'functional' ? '#22c55e' : '#ef4444';
+      
+      const icon = L.divIcon({
+        className: 'custom-marker',
+        html: `
+          <div style="
+            width: 24px;
+            height: 24px;
+            background: ${markerColor};
+            border: 3px solid white;
+            border-radius: 50%;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+            ${selectedLampadaire?.id === lampadaire.id ? 'transform: scale(1.3);' : ''}
+          "></div>
+        `,
+        iconSize: [24, 24],
+        iconAnchor: [12, 12],
+      });
+
+      const marker = L.marker([lampadaire.latitude, lampadaire.longitude], { icon })
+        .addTo(map.current!);
+
+      marker.bindPopup(`
+        <div style="min-width: 150px;">
+          <strong>${lampadaire.identifier}</strong><br/>
+          <span style="color: ${markerColor};">
+            ${lampadaire.status === 'functional' ? '✓ Fonctionnel' : '✗ Endommagé'}
+          </span>
+        </div>
+      `);
+
+      marker.on('click', () => {
+        if (onLampadaireClick) {
+          onLampadaireClick(lampadaire);
+        }
+      });
+
+      markersRef.current.push(marker);
+    });
+
+    // Fit bounds if we have markers
+    if (lampadaires.length > 0) {
+      const bounds = L.latLngBounds(
+        lampadaires.map(l => [l.latitude, l.longitude])
+      );
+      map.current.fitBounds(bounds, { padding: [50, 50] });
+    }
+  }, [lampadaires, onLampadaireClick, selectedLampadaire]);
+
+  // Handle user location
+  const locateUser = () => {
+    if (!navigator.geolocation) {
+      alert('La géolocalisation n\'est pas supportée par votre navigateur');
+      return;
+    }
+
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        const { latitude, longitude } = position.coords;
+        setUserLocation([latitude, longitude]);
+
+        if (map.current) {
+          // Remove existing user marker
+          if (userMarkerRef.current) {
+            userMarkerRef.current.remove();
+          }
+
+          // Add user marker
+          const userIcon = L.divIcon({
+            className: 'user-marker',
+            html: `
+              <div style="
+                width: 20px;
+                height: 20px;
+                background: #3b82f6;
+                border: 3px solid white;
+                border-radius: 50%;
+                box-shadow: 0 0 0 8px rgba(59, 130, 246, 0.3);
+              "></div>
+            `,
+            iconSize: [20, 20],
+            iconAnchor: [10, 10],
+          });
+
+          userMarkerRef.current = L.marker([latitude, longitude], { icon: userIcon })
+            .addTo(map.current)
+            .bindPopup('Votre position');
+
+          map.current.setView([latitude, longitude], 16);
+        }
+      },
+      (error) => {
+        console.error('Erreur de géolocalisation:', error);
+        alert('Impossible d\'obtenir votre position');
+      }
+    );
+  };
+
+  // Center on selected lampadaire
+  useEffect(() => {
+    if (selectedLampadaire && map.current) {
+      map.current.setView([selectedLampadaire.latitude, selectedLampadaire.longitude], 17);
+    }
+  }, [selectedLampadaire]);
+
+  return (
+    <div className="relative h-full w-full">
+      <div ref={mapContainer} className="h-full w-full rounded-lg" />
+      
+      {showUserLocation && (
+        <Button
+          variant="secondary"
+          size="icon"
+          className="absolute bottom-4 right-4 z-[1000] shadow-lg"
+          onClick={locateUser}
+        >
+          <Locate className="h-4 w-4" />
+        </Button>
+      )}
+    </div>
+  );
+}
