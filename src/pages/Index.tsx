@@ -96,7 +96,7 @@ export default function Index() {
   return (
     <div className="h-screen flex flex-col bg-background">
       {/* Header */}
-      <header className="bg-card border-b px-4 py-3 flex items-center justify-between z-10">
+      <header className="bg-card border-b px-4 py-3 flex items-center justify-between z-[1001] relative">
         <div className="flex items-center gap-3">
           <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary">
             <Lamp className="h-5 w-5 text-primary-foreground" />
