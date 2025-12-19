@@ -113,6 +113,8 @@ export default function AdminDashboard() {
                     action: 'Signalement approuvé',
                     previous_status: 'functional',
                     new_status: 'damaged',
+                    technician_name: null,
+                    intervention_type: null,
                     performed_by: user.id,
                   });
                   await fetchLampadaires();
