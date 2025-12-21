@@ -143,6 +143,7 @@ export default function AdminDashboard() {
                 return updateLampadaire(id, updates);
               }}
               onDelete={deleteLampadaire}
+              onRefresh={fetchLampadaires}
             />
           </TabsContent>
 

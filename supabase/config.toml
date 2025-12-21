@@ -1,1 +1,4 @@
 project_id = "dtqwvmdtbtjaoygmrzec"
+
+[functions.import-lampadaires]
+verify_jwt = false
