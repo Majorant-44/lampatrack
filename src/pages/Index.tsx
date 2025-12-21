@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { useLampadaires, useSignalements } from '@/hooks/useLampadaires';
@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
+import { Input } from '@/components/ui/input';
 import { 
   Lamp, 
   LogOut, 
@@ -17,7 +18,9 @@ import {
   CheckCircle,
   XCircle,
   Clock,
-  MapPin
+  MapPin,
+  Search,
+  X
 } from 'lucide-react';
 import type { Lampadaire } from '@/types/database';
 
@@ -30,6 +33,26 @@ export default function Index() {
   const [selectedLampadaire, setSelectedLampadaire] = useState<Lampadaire | null>(null);
   const [showReportForm, setShowReportForm] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [showSearch, setShowSearch] = useState(false);
+
+  // Filter lampadaires based on search
+  const filteredLampadaires = useMemo(() => {
+    if (!searchQuery.trim()) return lampadaires;
+    const query = searchQuery.toLowerCase();
+    return lampadaires.filter(l => 
+      l.identifier.toLowerCase().includes(query)
+    );
+  }, [lampadaires, searchQuery]);
+
+  // Search results for dropdown
+  const searchResults = useMemo(() => {
+    if (!searchQuery.trim()) return [];
+    const query = searchQuery.toLowerCase();
+    return lampadaires
+      .filter(l => l.identifier.toLowerCase().includes(query))
+      .slice(0, 5);
+  }, [lampadaires, searchQuery]);
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -108,6 +131,15 @@ export default function Index() {
         </div>
 
         <div className="flex items-center gap-2">
+          {/* Search button */}
+          <Button 
+            variant="ghost" 
+            size="icon"
+            onClick={() => setShowSearch(!showSearch)}
+          >
+            <Search className="h-5 w-5" />
+          </Button>
+
           {/* Stats badges */}
           <div className="hidden sm:flex items-center gap-2">
             <Badge variant="outline" className="gap-1">
@@ -201,10 +233,64 @@ export default function Index() {
         </div>
       </header>
 
+      {/* Search bar */}
+      {showSearch && (
+        <div className="bg-card border-b px-4 py-2 relative z-[1001]">
+          <div className="relative max-w-md mx-auto">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="Rechercher un lampadaire..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-10 pr-10"
+              autoFocus
+            />
+            {searchQuery && (
+              <Button
+                variant="ghost"
+                size="icon"
+                className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7"
+                onClick={() => setSearchQuery('')}
+              >
+                <X className="h-4 w-4" />
+              </Button>
+            )}
+          </div>
+          
+          {/* Search results dropdown */}
+          {searchResults.length > 0 && (
+            <div className="absolute left-4 right-4 top-full bg-card border rounded-b-lg shadow-lg max-w-md mx-auto">
+              {searchResults.map((lamp) => (
+                <button
+                  key={lamp.id}
+                  className="w-full px-4 py-3 text-left hover:bg-muted flex items-center justify-between border-b last:border-b-0"
+                  onClick={() => {
+                    setSelectedLampadaire(lamp);
+                    setSearchQuery('');
+                    setShowSearch(false);
+                  }}
+                >
+                  <div className="flex items-center gap-2">
+                    <MapPin className="h-4 w-4 text-primary" />
+                    <span className="font-medium">{lamp.identifier}</span>
+                  </div>
+                  <Badge 
+                    variant={lamp.status === 'functional' ? 'default' : 'destructive'}
+                    className={lamp.status === 'functional' ? 'bg-green-500' : ''}
+                  >
+                    {lamp.status === 'functional' ? 'OK' : 'HS'}
+                  </Badge>
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
       {/* Map */}
       <div className="flex-1 relative">
         <LampadaireMap
-          lampadaires={lampadaires}
+          lampadaires={filteredLampadaires}
           onLampadaireClick={handleLampadaireClick}
           selectedLampadaire={selectedLampadaire}
           showUserLocation={true}
