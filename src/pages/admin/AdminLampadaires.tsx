@@ -13,8 +13,12 @@ import {
   Trash2, 
   CheckCircle, 
   AlertCircle,
-  Wrench
+  Wrench,
+  Upload,
+  Loader2
 } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
+import { useToast } from '@/hooks/use-toast';
 import type { Lampadaire, LampadaireStatus } from '@/types/database';
 
 interface AdminLampadairesProps {
@@ -22,12 +26,15 @@ interface AdminLampadairesProps {
   onAdd: (lampadaire: Omit<Lampadaire, 'id' | 'created_at' | 'updated_at'>) => Promise<any>;
   onUpdate: (id: string, updates: Partial<Lampadaire> & { technician_name?: string; intervention_type?: string }) => Promise<any>;
   onDelete: (id: string) => Promise<boolean>;
+  onRefresh?: () => Promise<void>;
 }
 
-export default function AdminLampadaires({ lampadaires, onAdd, onUpdate, onDelete }: AdminLampadairesProps) {
+export default function AdminLampadaires({ lampadaires, onAdd, onUpdate, onDelete, onRefresh }: AdminLampadairesProps) {
   const [showAddDialog, setShowAddDialog] = useState(false);
   const [editingLampadaire, setEditingLampadaire] = useState<Lampadaire | null>(null);
   const [repairingLampadaire, setRepairingLampadaire] = useState<Lampadaire | null>(null);
+  const [importing, setImporting] = useState(false);
+  const { toast } = useToast();
   
   // Form state
   const [identifier, setIdentifier] = useState('');
@@ -37,6 +44,49 @@ export default function AdminLampadaires({ lampadaires, onAdd, onUpdate, onDelet
   const [technicianName, setTechnicianName] = useState('');
   const [interventionType, setInterventionType] = useState('');
   const [loading, setLoading] = useState(false);
+
+  const handleImportGeoJSON = async () => {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = '.geojson,.json';
+    
+    input.onchange = async (e) => {
+      const file = (e.target as HTMLInputElement).files?.[0];
+      if (!file) return;
+
+      setImporting(true);
+      try {
+        const text = await file.text();
+        const geojsonData = JSON.parse(text);
+
+        const { data, error } = await supabase.functions.invoke('import-lampadaires', {
+          body: { geojsonData }
+        });
+
+        if (error) throw error;
+
+        toast({
+          title: 'Import réussi',
+          description: `${data.inserted} lampadaires importés sur ${data.total}`,
+        });
+
+        if (onRefresh) {
+          await onRefresh();
+        }
+      } catch (error: any) {
+        console.error('Import error:', error);
+        toast({
+          title: 'Erreur d\'import',
+          description: error.message || 'Impossible d\'importer les données',
+          variant: 'destructive',
+        });
+      } finally {
+        setImporting(false);
+      }
+    };
+
+    input.click();
+  };
 
   const resetForm = () => {
     setIdentifier('');
@@ -113,6 +163,19 @@ export default function AdminLampadaires({ lampadaires, onAdd, onUpdate, onDelet
             <CardTitle>Gestion des lampadaires</CardTitle>
             <CardDescription>{lampadaires.length} lampadaires enregistrés</CardDescription>
           </div>
+        <div className="flex gap-2">
+          <Button 
+            variant="outline" 
+            onClick={handleImportGeoJSON}
+            disabled={importing}
+          >
+            {importing ? (
+              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+            ) : (
+              <Upload className="h-4 w-4 mr-2" />
+            )}
+            {importing ? 'Import...' : 'Importer GeoJSON'}
+          </Button>
           <Dialog open={showAddDialog} onOpenChange={setShowAddDialog}>
             <DialogTrigger asChild>
               <Button onClick={resetForm}>
@@ -174,6 +237,7 @@ export default function AdminLampadaires({ lampadaires, onAdd, onUpdate, onDelet
               </div>
             </DialogContent>
           </Dialog>
+        </div>
         </div>
       </CardHeader>
       <CardContent>
