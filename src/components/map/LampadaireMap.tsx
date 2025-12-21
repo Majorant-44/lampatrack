@@ -29,7 +29,7 @@ export default function LampadaireMap({
     if (!mapContainer.current || map.current) return;
 
     map.current = L.map(mapContainer.current, {
-      center: [48.8566, 2.3522], // Paris
+      center: [14.6937, -17.4441], // Dakar
       zoom: 13,
       zoomControl: true,
     });
