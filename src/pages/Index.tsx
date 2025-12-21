@@ -127,7 +127,7 @@ export default function Index() {
                 <Menu className="h-5 w-5" />
               </Button>
             </SheetTrigger>
-            <SheetContent className="z-[1002]">
+            <SheetContent>
               <SheetHeader>
                 <SheetTitle>Menu</SheetTitle>
               </SheetHeader>
