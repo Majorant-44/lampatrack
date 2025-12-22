@@ -22,6 +22,7 @@ export default function LampadaireMap({
   const map = useRef<L.Map | null>(null);
   const markersRef = useRef<L.Marker[]>([]);
   const userMarkerRef = useRef<L.Marker | null>(null);
+  const initialBoundsSet = useRef(false);
   const [userLocation, setUserLocation] = useState<[number, number] | null>(null);
 
   // Initialize map
@@ -96,12 +97,13 @@ export default function LampadaireMap({
       markersRef.current.push(marker);
     });
 
-    // Fit bounds if we have markers
-    if (lampadaires.length > 0) {
+    // Fit bounds only on initial load
+    if (lampadaires.length > 0 && !initialBoundsSet.current) {
       const bounds = L.latLngBounds(
         lampadaires.map(l => [l.latitude, l.longitude])
       );
       map.current.fitBounds(bounds, { padding: [50, 50] });
+      initialBoundsSet.current = true;
     }
   }, [lampadaires, onLampadaireClick, selectedLampadaire]);
 
@@ -154,10 +156,10 @@ export default function LampadaireMap({
     );
   };
 
-  // Center on selected lampadaire
+  // Center on selected lampadaire without changing zoom
   useEffect(() => {
     if (selectedLampadaire && map.current) {
-      map.current.setView([selectedLampadaire.latitude, selectedLampadaire.longitude], 17);
+      map.current.panTo([selectedLampadaire.latitude, selectedLampadaire.longitude]);
     }
   }, [selectedLampadaire]);
 
