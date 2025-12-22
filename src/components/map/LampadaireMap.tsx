@@ -3,7 +3,7 @@ import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import type { Lampadaire } from '@/types/database';
 import { Button } from '@/components/ui/button';
-import { Locate } from 'lucide-react';
+import { Locate, Layers } from 'lucide-react';
 
 interface LampadaireMapProps {
   lampadaires: Lampadaire[];
@@ -11,6 +11,17 @@ interface LampadaireMapProps {
   selectedLampadaire?: Lampadaire | null;
   showUserLocation?: boolean;
 }
+
+const TILE_LAYERS = {
+  standard: {
+    url: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+  },
+  satellite: {
+    url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+    attribution: '&copy; <a href="https://www.esri.com/">Esri</a> - World Imagery',
+  },
+};
 
 export default function LampadaireMap({
   lampadaires,
@@ -22,8 +33,10 @@ export default function LampadaireMap({
   const map = useRef<L.Map | null>(null);
   const markersRef = useRef<L.Marker[]>([]);
   const userMarkerRef = useRef<L.Marker | null>(null);
+  const tileLayerRef = useRef<L.TileLayer | null>(null);
   const initialBoundsSet = useRef(false);
   const [userLocation, setUserLocation] = useState<[number, number] | null>(null);
+  const [mapStyle, setMapStyle] = useState<'standard' | 'satellite'>('standard');
 
   // Initialize map
   useEffect(() => {
@@ -35,8 +48,8 @@ export default function LampadaireMap({
       zoomControl: true,
     });
 
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+    tileLayerRef.current = L.tileLayer(TILE_LAYERS.standard.url, {
+      attribution: TILE_LAYERS.standard.attribution,
     }).addTo(map.current);
 
     return () => {
@@ -46,6 +59,20 @@ export default function LampadaireMap({
       }
     };
   }, []);
+
+  // Switch tile layer when style changes
+  useEffect(() => {
+    if (!map.current) return;
+
+    if (tileLayerRef.current) {
+      tileLayerRef.current.remove();
+    }
+
+    const layer = TILE_LAYERS[mapStyle];
+    tileLayerRef.current = L.tileLayer(layer.url, {
+      attribution: layer.attribution,
+    }).addTo(map.current);
+  }, [mapStyle]);
 
   // Update markers when lampadaires change
   useEffect(() => {
@@ -156,6 +183,10 @@ export default function LampadaireMap({
     );
   };
 
+  const toggleMapStyle = () => {
+    setMapStyle(prev => prev === 'standard' ? 'satellite' : 'standard');
+  };
+
   // Center on selected lampadaire without changing zoom
   useEffect(() => {
     if (selectedLampadaire && map.current) {
@@ -167,16 +198,30 @@ export default function LampadaireMap({
     <div className="relative h-full w-full">
       <div ref={mapContainer} className="h-full w-full rounded-lg" />
       
-      {showUserLocation && (
+      <div className="absolute bottom-4 right-4 z-[1000] flex flex-col gap-2">
+        {/* Layer toggle button */}
         <Button
           variant="secondary"
           size="icon"
-          className="absolute bottom-4 right-4 z-[1000] shadow-lg"
-          onClick={locateUser}
+          className="shadow-lg"
+          onClick={toggleMapStyle}
+          title={mapStyle === 'standard' ? 'Vue satellite' : 'Vue standard'}
         >
-          <Locate className="h-4 w-4" />
+          <Layers className="h-4 w-4" />
         </Button>
-      )}
+
+        {/* Location button */}
+        {showUserLocation && (
+          <Button
+            variant="secondary"
+            size="icon"
+            className="shadow-lg"
+            onClick={locateUser}
+          >
+            <Locate className="h-4 w-4" />
+          </Button>
+        )}
+      </div>
     </div>
   );
 }

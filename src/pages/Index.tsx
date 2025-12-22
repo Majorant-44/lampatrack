@@ -20,8 +20,16 @@ import {
   Clock,
   MapPin,
   Search,
-  X
+  X,
+  Filter
 } from 'lucide-react';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuRadioGroup,
+  DropdownMenuRadioItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import type { Lampadaire } from '@/types/database';
 
 export default function Index() {
@@ -35,15 +43,25 @@ export default function Index() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [showSearch, setShowSearch] = useState(false);
+  const [statusFilter, setStatusFilter] = useState<'all' | 'functional' | 'damaged'>('all');
 
-  // Filter lampadaires based on search
+  // Filter lampadaires based on search and status
   const filteredLampadaires = useMemo(() => {
-    if (!searchQuery.trim()) return lampadaires;
-    const query = searchQuery.toLowerCase();
-    return lampadaires.filter(l => 
-      l.identifier.toLowerCase().includes(query)
-    );
-  }, [lampadaires, searchQuery]);
+    let filtered = lampadaires;
+    
+    // Filter by status
+    if (statusFilter !== 'all') {
+      filtered = filtered.filter(l => l.status === statusFilter);
+    }
+    
+    // Filter by search query
+    if (searchQuery.trim()) {
+      const query = searchQuery.toLowerCase();
+      filtered = filtered.filter(l => l.identifier.toLowerCase().includes(query));
+    }
+    
+    return filtered;
+  }, [lampadaires, searchQuery, statusFilter]);
 
   // Search results for dropdown
   const searchResults = useMemo(() => {
@@ -131,6 +149,33 @@ export default function Index() {
         </div>
 
         <div className="flex items-center gap-2">
+          {/* Filter dropdown */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button 
+                variant={statusFilter !== 'all' ? 'default' : 'ghost'} 
+                size="icon"
+              >
+                <Filter className="h-5 w-5" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-48">
+              <DropdownMenuRadioGroup value={statusFilter} onValueChange={(v) => setStatusFilter(v as any)}>
+                <DropdownMenuRadioItem value="all">
+                  Tous ({lampadaires.length})
+                </DropdownMenuRadioItem>
+                <DropdownMenuRadioItem value="functional">
+                  <CheckCircle className="h-4 w-4 mr-2 text-green-500" />
+                  Fonctionnels ({functionalCount})
+                </DropdownMenuRadioItem>
+                <DropdownMenuRadioItem value="damaged">
+                  <XCircle className="h-4 w-4 mr-2 text-red-500" />
+                  Endommagés ({damagedCount})
+                </DropdownMenuRadioItem>
+              </DropdownMenuRadioGroup>
+            </DropdownMenuContent>
+          </DropdownMenu>
+
           {/* Search button */}
           <Button 
             variant="ghost" 
