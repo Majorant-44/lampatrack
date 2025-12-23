@@ -225,6 +225,7 @@ export function useSignalements() {
 export function useLampadaireHistory() {
   const [history, setHistory] = useState<LampadaireHistory[]>([]);
   const [loading, setLoading] = useState(true);
+  const { toast } = useToast();
 
   useEffect(() => {
     fetchHistory();
@@ -257,10 +258,34 @@ export function useLampadaireHistory() {
     return !error;
   };
 
+  const deleteHistory = async (id: string) => {
+    const { error } = await supabase
+      .from('lampadaire_history')
+      .delete()
+      .eq('id', id);
+
+    if (error) {
+      toast({
+        title: 'Erreur',
+        description: 'Impossible de supprimer l\'intervention',
+        variant: 'destructive',
+      });
+      return false;
+    }
+
+    setHistory(prev => prev.filter(h => h.id !== id));
+    toast({
+      title: 'Succès',
+      description: 'Intervention supprimée',
+    });
+    return true;
+  };
+
   return {
     history,
     loading,
     fetchHistory,
     addHistory,
+    deleteHistory,
   };
 }

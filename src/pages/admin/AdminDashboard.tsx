@@ -26,7 +26,7 @@ export default function AdminDashboard() {
 
   const { lampadaires, loading: lampadairesLoading, fetchLampadaires, addLampadaire, updateLampadaire, deleteLampadaire } = useLampadaires();
   const { signalements, loading: signalementsLoading, fetchSignalements, processSignalement } = useSignalements();
-  const { history, loading: historyLoading, fetchHistory, addHistory } = useLampadaireHistory();
+  const { history, loading: historyLoading, fetchHistory, addHistory, deleteHistory } = useLampadaireHistory();
 
   useEffect(() => {
     if (!authLoading && (!user || !isAdmin)) {
@@ -156,7 +156,7 @@ export default function AdminDashboard() {
           </TabsContent>
 
           <TabsContent value="history">
-            <AdminHistory history={history} loading={historyLoading} />
+            <AdminHistory history={history} loading={historyLoading} onDeleteHistory={deleteHistory} />
           </TabsContent>
 
           <TabsContent value="users">
