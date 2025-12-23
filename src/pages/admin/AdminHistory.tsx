@@ -21,6 +21,7 @@ import {
   Trash2,
   X
 } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
 import type { LampadaireHistory } from '@/types/database';
 
 interface AdminHistoryProps {
@@ -28,8 +29,6 @@ interface AdminHistoryProps {
   loading: boolean;
   onDeleteHistory?: (id: string) => Promise<boolean>;
 }
-
-const ADMIN_DELETE_PASSWORD = 'admin123';
 
 export default function AdminHistory({ history, loading, onDeleteHistory }: AdminHistoryProps) {
   const [searchQuery, setSearchQuery] = useState('');
@@ -78,7 +77,25 @@ export default function AdminHistory({ history, loading, onDeleteHistory }: Admi
   };
 
   const handleConfirmDelete = async () => {
-    if (password !== ADMIN_DELETE_PASSWORD) {
+    if (!password) {
+      setPasswordError('Veuillez entrer votre mot de passe');
+      return;
+    }
+
+    // Get current user email
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user?.email) {
+      setPasswordError('Impossible de vérifier l\'utilisateur');
+      return;
+    }
+
+    // Verify password by attempting to sign in
+    const { error: authError } = await supabase.auth.signInWithPassword({
+      email: user.email,
+      password: password,
+    });
+
+    if (authError) {
       setPasswordError('Mot de passe incorrect');
       return;
     }
@@ -217,14 +234,14 @@ export default function AdminHistory({ history, loading, onDeleteHistory }: Admi
           <DialogHeader>
             <DialogTitle>Confirmer la suppression</DialogTitle>
             <DialogDescription>
-              Cette action est irréversible. Veuillez entrer le mot de passe administrateur pour confirmer la suppression de cette intervention.
+              Cette action est irréversible. Veuillez entrer votre mot de passe de connexion pour confirmer la suppression.
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-4">
             <div className="space-y-2">
               <Input
                 type="password"
-                placeholder="Mot de passe administrateur"
+                placeholder="Votre mot de passe"
                 value={password}
                 onChange={(e) => {
                   setPassword(e.target.value);
