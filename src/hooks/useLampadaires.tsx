@@ -55,15 +55,19 @@ export function useLampadaires() {
     return data;
   };
 
-  const updateLampadaire = async (id: string, updates: Partial<Lampadaire>) => {
+  const updateLampadaire = async (id: string, updates: Partial<Lampadaire> & { technician_name?: string; intervention_type?: string }) => {
+    // Extract only the fields that belong to the lampadaires table
+    const { technician_name, intervention_type, ...lampadaireUpdates } = updates;
+    
     const { data, error } = await supabase
       .from('lampadaires')
-      .update(updates)
+      .update(lampadaireUpdates)
       .eq('id', id)
       .select()
       .single();
 
     if (error) {
+      console.error('Error updating lampadaire:', error);
       toast({
         title: 'Erreur',
         description: 'Impossible de mettre à jour le lampadaire',
