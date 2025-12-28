@@ -14,6 +14,39 @@ export type Database = {
   }
   public: {
     Tables: {
+      email_verification_codes: {
+        Row: {
+          code: string
+          created_at: string
+          email: string
+          expires_at: string
+          full_name: string
+          id: string
+          password_hash: string
+          verified: boolean
+        }
+        Insert: {
+          code: string
+          created_at?: string
+          email: string
+          expires_at?: string
+          full_name: string
+          id?: string
+          password_hash: string
+          verified?: boolean
+        }
+        Update: {
+          code?: string
+          created_at?: string
+          email?: string
+          expires_at?: string
+          full_name?: string
+          id?: string
+          password_hash?: string
+          verified?: boolean
+        }
+        Relationships: []
+      }
       lampadaire_history: {
         Row: {
           action: string
