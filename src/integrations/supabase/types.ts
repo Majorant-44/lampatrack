@@ -175,6 +175,13 @@ export type Database = {
             referencedRelation: "lampadaires"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "signalements_user_id_profiles_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
+          },
         ]
       }
       user_roles: {
