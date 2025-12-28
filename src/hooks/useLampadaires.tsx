@@ -133,7 +133,7 @@ export function useSignalements() {
       .select(`
         *,
         lampadaire:lampadaires(*),
-        profile:profiles!signalements_user_id_fkey(*)
+        profile:profiles!signalements_user_id_profiles_fkey(*)
       `)
       .order('created_at', { ascending: false });
 
