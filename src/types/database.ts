@@ -34,6 +34,9 @@ export interface Profile {
   full_name: string | null;
   email: string | null;
   created_at: string;
+  is_banned: boolean;
+  banned_at: string | null;
+  banned_reason: string | null;
 }
 
 export interface UserRole {

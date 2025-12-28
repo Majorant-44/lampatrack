@@ -132,7 +132,8 @@ export function useSignalements() {
       .from('signalements')
       .select(`
         *,
-        lampadaire:lampadaires(*)
+        lampadaire:lampadaires(*),
+        profile:profiles!signalements_user_id_fkey(*)
       `)
       .order('created_at', { ascending: false });
 
