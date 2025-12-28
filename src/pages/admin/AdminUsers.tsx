@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -13,7 +13,8 @@ import {
   UserPlus, 
   Shield, 
   User,
-  Mail
+  Mail,
+  Search
 } from 'lucide-react';
 import type { Profile, UserRole, AppRole } from '@/types/database';
 
@@ -30,6 +31,7 @@ export default function AdminUsers() {
   const [fullName, setFullName] = useState('');
   const [role, setRole] = useState<AppRole>('user');
   const [creating, setCreating] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
   const { toast } = useToast();
 
   useEffect(() => {
@@ -158,6 +160,17 @@ export default function AdminUsers() {
     fetchUsers();
   };
 
+  const filteredUsers = useMemo(() => {
+    if (!searchQuery.trim()) return users;
+    
+    const query = searchQuery.toLowerCase();
+    return users.filter(user => 
+      user.full_name?.toLowerCase().includes(query) ||
+      user.email?.toLowerCase().includes(query) ||
+      user.role.toLowerCase().includes(query)
+    );
+  }, [users, searchQuery]);
+
   if (loading) {
     return (
       <Card>
@@ -235,7 +248,18 @@ export default function AdminUsers() {
           </Dialog>
         </div>
       </CardHeader>
-      <CardContent>
+      <CardContent className="space-y-4">
+        {/* Search Bar */}
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input
+            placeholder="Rechercher par nom, email ou rôle..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="pl-10"
+          />
+        </div>
+
         <div className="overflow-x-auto">
           <Table>
             <TableHeader>
@@ -248,7 +272,14 @@ export default function AdminUsers() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {users.map((user) => (
+              {filteredUsers.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={5} className="text-center text-muted-foreground py-8">
+                    {searchQuery ? 'Aucun utilisateur trouvé' : 'Aucun utilisateur'}
+                  </TableCell>
+                </TableRow>
+              ) : (
+              filteredUsers.map((user) => (
                 <TableRow key={user.id}>
                   <TableCell className="font-medium">
                     {user.full_name || 'Non renseigné'}
@@ -290,7 +321,8 @@ export default function AdminUsers() {
                     </Select>
                   </TableCell>
                 </TableRow>
-              ))}
+              ))
+              )}
             </TableBody>
           </Table>
         </div>
