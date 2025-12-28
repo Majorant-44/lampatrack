@@ -84,27 +84,49 @@ export default function LampadaireMap({
 
     // Add new markers
     lampadaires.forEach((lampadaire) => {
+      const isSelected = selectedLampadaire?.id === lampadaire.id;
       const markerColor = lampadaire.status === 'functional' ? '#22c55e' : '#ef4444';
+      
+      // Yellow highlight for selected lampadaire
+      const selectedStyles = isSelected 
+        ? `
+            background: #FBBF24 !important;
+            border: 4px solid white;
+            box-shadow: 0 0 0 4px #FBBF24, 0 0 20px 8px rgba(251, 191, 36, 0.6), 0 0 40px 16px rgba(251, 191, 36, 0.3);
+            transform: scale(1.4);
+            animation: pulse 1.5s ease-in-out infinite;
+          `
+        : `
+            background: ${markerColor};
+            border: 3px solid white;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+          `;
       
       const icon = L.divIcon({
         className: 'custom-marker',
         html: `
+          <style>
+            @keyframes pulse {
+              0%, 100% { transform: scale(1.4); opacity: 1; }
+              50% { transform: scale(1.6); opacity: 0.9; }
+            }
+          </style>
           <div style="
-            width: 24px;
-            height: 24px;
-            background: ${markerColor};
-            border: 3px solid white;
+            width: ${isSelected ? '28px' : '24px'};
+            height: ${isSelected ? '28px' : '24px'};
             border-radius: 50%;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.3);
-            ${selectedLampadaire?.id === lampadaire.id ? 'transform: scale(1.3);' : ''}
+            ${selectedStyles}
+            transition: all 0.3s ease;
           "></div>
         `,
-        iconSize: [24, 24],
-        iconAnchor: [12, 12],
+        iconSize: [isSelected ? 28 : 24, isSelected ? 28 : 24],
+        iconAnchor: [isSelected ? 14 : 12, isSelected ? 14 : 12],
       });
 
-      const marker = L.marker([lampadaire.latitude, lampadaire.longitude], { icon })
-        .addTo(map.current!);
+      const marker = L.marker([lampadaire.latitude, lampadaire.longitude], { 
+        icon,
+        zIndexOffset: isSelected ? 1000 : 0
+      }).addTo(map.current!);
 
       marker.bindPopup(`
         <div style="min-width: 150px;">
