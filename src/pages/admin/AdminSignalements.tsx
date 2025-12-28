@@ -11,7 +11,9 @@ import {
   MapPin, 
   Image as ImageIcon,
   Calendar,
-  AlertCircle
+  AlertCircle,
+  User,
+  Mail
 } from 'lucide-react';
 import type { Signalement, Lampadaire } from '@/types/database';
 
@@ -92,6 +94,21 @@ export default function AdminSignalements({ signalements, lampadaires, onProcess
                     {signalement.description && (
                       <p className="text-sm bg-muted p-2 rounded">{signalement.description}</p>
                     )}
+
+                    {/* User info */}
+                    <div className="bg-muted/50 rounded-lg p-3 space-y-1">
+                      <p className="text-xs font-medium text-muted-foreground">Signalé par:</p>
+                      <div className="flex items-center gap-4 text-sm">
+                        <span className="flex items-center gap-1">
+                          <User className="h-3 w-3 text-muted-foreground" />
+                          {signalement.profile?.full_name || 'Utilisateur inconnu'}
+                        </span>
+                        <span className="flex items-center gap-1">
+                          <Mail className="h-3 w-3 text-muted-foreground" />
+                          {signalement.profile?.email || 'Email non renseigné'}
+                        </span>
+                      </div>
+                    </div>
 
                     <div className="flex items-center gap-4 text-sm text-muted-foreground">
                       <span className="flex items-center gap-1">

@@ -14,12 +14,17 @@ import {
   Shield, 
   User,
   Mail,
-  Search
+  Search,
+  Ban,
+  CheckCircle
 } from 'lucide-react';
 import type { Profile, UserRole, AppRole } from '@/types/database';
 
 interface UserWithRole extends Profile {
   role: AppRole;
+  is_banned: boolean;
+  banned_at: string | null;
+  banned_reason: string | null;
 }
 
 export default function AdminUsers() {
@@ -32,6 +37,10 @@ export default function AdminUsers() {
   const [role, setRole] = useState<AppRole>('user');
   const [creating, setCreating] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const [banDialogOpen, setBanDialogOpen] = useState(false);
+  const [selectedUser, setSelectedUser] = useState<UserWithRole | null>(null);
+  const [banReason, setBanReason] = useState('');
+  const [banning, setBanning] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -69,6 +78,9 @@ export default function AdminUsers() {
       return {
         ...profile,
         role: (userRole?.role as AppRole) || 'user',
+        is_banned: (profile as any).is_banned || false,
+        banned_at: (profile as any).banned_at || null,
+        banned_reason: (profile as any).banned_reason || null,
       };
     });
 
@@ -158,6 +170,47 @@ export default function AdminUsers() {
     });
     
     fetchUsers();
+  };
+
+  const handleBanUser = async () => {
+    if (!selectedUser) return;
+    
+    setBanning(true);
+    
+    const isBanned = !selectedUser.is_banned;
+    const { error } = await supabase
+      .from('profiles')
+      .update({
+        is_banned: isBanned,
+        banned_at: isBanned ? new Date().toISOString() : null,
+        banned_reason: isBanned ? banReason : null,
+      })
+      .eq('user_id', selectedUser.user_id);
+
+    if (error) {
+      toast({
+        title: 'Erreur',
+        description: 'Impossible de modifier le statut de bannissement',
+        variant: 'destructive',
+      });
+    } else {
+      toast({
+        title: 'Succès',
+        description: isBanned ? 'Utilisateur banni' : 'Utilisateur débanni',
+      });
+      fetchUsers();
+    }
+
+    setBanning(false);
+    setBanDialogOpen(false);
+    setSelectedUser(null);
+    setBanReason('');
+  };
+
+  const openBanDialog = (user: UserWithRole) => {
+    setSelectedUser(user);
+    setBanReason(user.banned_reason || '');
+    setBanDialogOpen(true);
   };
 
   const filteredUsers = useMemo(() => {
@@ -267,6 +320,7 @@ export default function AdminUsers() {
                 <TableHead>Nom</TableHead>
                 <TableHead>Email</TableHead>
                 <TableHead>Rôle</TableHead>
+                <TableHead>Statut</TableHead>
                 <TableHead>Inscrit le</TableHead>
                 <TableHead className="text-right">Actions</TableHead>
               </TableRow>
@@ -274,7 +328,7 @@ export default function AdminUsers() {
             <TableBody>
               {filteredUsers.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={5} className="text-center text-muted-foreground py-8">
+                  <TableCell colSpan={6} className="text-center text-muted-foreground py-8">
                     {searchQuery ? 'Aucun utilisateur trouvé' : 'Aucun utilisateur'}
                   </TableCell>
                 </TableRow>
@@ -303,22 +357,54 @@ export default function AdminUsers() {
                       </Badge>
                     )}
                   </TableCell>
+                  <TableCell>
+                    {user.is_banned ? (
+                      <Badge variant="destructive" className="bg-red-500/10 text-red-500 border-red-500/20">
+                        <Ban className="h-3 w-3 mr-1" />
+                        Banni
+                      </Badge>
+                    ) : (
+                      <Badge variant="outline" className="bg-green-500/10 text-green-500 border-green-500/20">
+                        <CheckCircle className="h-3 w-3 mr-1" />
+                        Actif
+                      </Badge>
+                    )}
+                  </TableCell>
                   <TableCell className="text-muted-foreground">
                     {new Date(user.created_at).toLocaleDateString('fr-FR')}
                   </TableCell>
                   <TableCell className="text-right">
-                    <Select
-                      value={user.role}
-                      onValueChange={(v) => updateUserRole(user.user_id, v as AppRole)}
-                    >
-                      <SelectTrigger className="w-32">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="user">Utilisateur</SelectItem>
-                        <SelectItem value="admin">Admin</SelectItem>
-                      </SelectContent>
-                    </Select>
+                    <div className="flex items-center justify-end gap-2">
+                      <Button
+                        variant={user.is_banned ? 'outline' : 'destructive'}
+                        size="sm"
+                        onClick={() => openBanDialog(user)}
+                      >
+                        {user.is_banned ? (
+                          <>
+                            <CheckCircle className="h-4 w-4 mr-1" />
+                            Débannir
+                          </>
+                        ) : (
+                          <>
+                            <Ban className="h-4 w-4 mr-1" />
+                            Bannir
+                          </>
+                        )}
+                      </Button>
+                      <Select
+                        value={user.role}
+                        onValueChange={(v) => updateUserRole(user.user_id, v as AppRole)}
+                      >
+                        <SelectTrigger className="w-32">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="user">Utilisateur</SelectItem>
+                          <SelectItem value="admin">Admin</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
                   </TableCell>
                 </TableRow>
               ))
@@ -327,6 +413,57 @@ export default function AdminUsers() {
           </Table>
         </div>
       </CardContent>
+
+      {/* Ban Dialog */}
+      <Dialog open={banDialogOpen} onOpenChange={setBanDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>
+              {selectedUser?.is_banned ? 'Débannir l\'utilisateur' : 'Bannir l\'utilisateur'}
+            </DialogTitle>
+            <DialogDescription>
+              {selectedUser?.is_banned 
+                ? `Voulez-vous débannir ${selectedUser?.full_name || selectedUser?.email}?`
+                : `Bannir ${selectedUser?.full_name || selectedUser?.email} pour abus de signalements?`
+              }
+            </DialogDescription>
+          </DialogHeader>
+          
+          {!selectedUser?.is_banned && (
+            <div className="space-y-2">
+              <Label>Raison du bannissement</Label>
+              <Input
+                value={banReason}
+                onChange={(e) => setBanReason(e.target.value)}
+                placeholder="Ex: Faux signalements répétés..."
+              />
+            </div>
+          )}
+
+          {selectedUser?.is_banned && selectedUser?.banned_reason && (
+            <div className="bg-muted p-3 rounded-lg">
+              <p className="text-sm font-medium">Raison du bannissement:</p>
+              <p className="text-sm text-muted-foreground">{selectedUser.banned_reason}</p>
+              <p className="text-xs text-muted-foreground mt-2">
+                Banni le: {new Date(selectedUser.banned_at!).toLocaleDateString('fr-FR')}
+              </p>
+            </div>
+          )}
+
+          <div className="flex gap-2 justify-end">
+            <Button variant="outline" onClick={() => setBanDialogOpen(false)}>
+              Annuler
+            </Button>
+            <Button 
+              variant={selectedUser?.is_banned ? 'default' : 'destructive'}
+              onClick={handleBanUser}
+              disabled={banning}
+            >
+              {banning ? 'Traitement...' : selectedUser?.is_banned ? 'Débannir' : 'Bannir'}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </Card>
   );
 }
