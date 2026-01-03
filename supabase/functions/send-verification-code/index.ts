@@ -78,7 +78,7 @@ const handler = async (req: Request): Promise<Response> => {
 
     // Send verification email
     const emailResponse = await resend.emails.send({
-      from: "LampaTrack <onboarding@resend.dev>",
+      from: Deno.env.get("RESEND_FROM") ?? "LampaTrack <onboarding@resend.dev>",
       to: [email],
       subject: "Code de vérification LampaTrack",
       html: `
@@ -95,7 +95,17 @@ const handler = async (req: Request): Promise<Response> => {
       `,
     });
 
-    console.log("Verification email sent:", emailResponse);
+    console.log("Verification email send result:", emailResponse);
+
+    if (emailResponse.error) {
+      return new Response(
+        JSON.stringify({
+          error: "Erreur lors de l'envoi de l'email de vérification",
+          details: emailResponse.error.message,
+        }),
+        { status: 502, headers: { "Content-Type": "application/json", ...corsHeaders } }
+      );
+    }
 
     return new Response(
       JSON.stringify({ success: true, message: "Code de vérification envoyé" }),
