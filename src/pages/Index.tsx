@@ -4,6 +4,8 @@ import { useAuth } from '@/hooks/useAuth';
 import { useLampadaires, useSignalements } from '@/hooks/useLampadaires';
 import LampadaireMap from '@/components/map/LampadaireMap';
 import ReportForm from '@/components/report/ReportForm';
+import { isInYeumbeulNord } from '@/lib/zoneCheck';
+import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -99,9 +101,15 @@ export default function Index() {
   };
 
   const handleReport = () => {
-    if (selectedLampadaire) {
-      setShowReportForm(true);
+    if (!selectedLampadaire) return;
+    
+    // Check if user is admin or if lampadaire is within zone
+    if (!isAdmin && !isInYeumbeulNord(selectedLampadaire.latitude, selectedLampadaire.longitude)) {
+      toast.error('Ce lampadaire est en dehors de la zone d\'étude. Seuls les administrateurs peuvent faire des signalements pour ce lampadaire.');
+      return;
     }
+    
+    setShowReportForm(true);
   };
 
   const handleSubmitReport = async (cause: string, description: string | null, photoUrl: string) => {
