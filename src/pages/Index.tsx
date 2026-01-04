@@ -46,6 +46,28 @@ export default function Index() {
   const [searchQuery, setSearchQuery] = useState('');
   const [showSearch, setShowSearch] = useState(false);
   const [statusFilter, setStatusFilter] = useState<'all' | 'functional' | 'damaged'>('all');
+  const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
+  const [locationError, setLocationError] = useState<string | null>(null);
+
+  // Get user's current location
+  useEffect(() => {
+    if (!isAdmin && navigator.geolocation) {
+      navigator.geolocation.watchPosition(
+        (position) => {
+          setUserLocation({
+            lat: position.coords.latitude,
+            lng: position.coords.longitude
+          });
+          setLocationError(null);
+        },
+        (error) => {
+          console.error('Erreur de géolocalisation:', error);
+          setLocationError('Impossible d\'obtenir votre position');
+        },
+        { enableHighAccuracy: true, timeout: 10000, maximumAge: 30000 }
+      );
+    }
+  }, [isAdmin]);
 
   // Filter lampadaires based on search and status
   const filteredLampadaires = useMemo(() => {
@@ -103,9 +125,21 @@ export default function Index() {
   const handleReport = () => {
     if (!selectedLampadaire) return;
     
-    // Check if user is admin or if lampadaire is within zone
-    if (!isAdmin && !isInYeumbeulNord(selectedLampadaire.latitude, selectedLampadaire.longitude)) {
-      toast.error('Ce lampadaire est en dehors de la zone d\'étude. Seuls les administrateurs peuvent faire des signalements pour ce lampadaire.');
+    // Admins can report from anywhere
+    if (isAdmin) {
+      setShowReportForm(true);
+      return;
+    }
+    
+    // Check if we have user location
+    if (!userLocation) {
+      toast.error('Veuillez activer la géolocalisation pour faire un signalement.');
+      return;
+    }
+    
+    // Check if user is within the Yeumbeul Nord zone
+    if (!isInYeumbeulNord(userLocation.lat, userLocation.lng)) {
+      toast.error('Vous êtes en dehors de la zone de Yeumbeul Nord. Vous devez être dans la zone pour faire un signalement.');
       return;
     }
     
