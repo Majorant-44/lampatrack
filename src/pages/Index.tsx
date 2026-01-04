@@ -383,6 +383,35 @@ export default function Index() {
           showUserLocation={true}
         />
 
+        {/* Zone indicator for non-admin users */}
+        {!isAdmin && (
+          <div className="absolute top-4 left-4 z-[1000]">
+            {locationError ? (
+              <Badge variant="outline" className="gap-2 bg-card shadow-md border-yellow-500 text-yellow-600">
+                <MapPin className="h-3 w-3" />
+                GPS non disponible
+              </Badge>
+            ) : userLocation ? (
+              isInYeumbeulNord(userLocation.lat, userLocation.lng) ? (
+                <Badge className="gap-2 bg-green-500 hover:bg-green-500 shadow-md">
+                  <CheckCircle className="h-3 w-3" />
+                  Dans la zone autorisée
+                </Badge>
+              ) : (
+                <Badge variant="destructive" className="gap-2 shadow-md">
+                  <XCircle className="h-3 w-3" />
+                  Hors zone - Signalement désactivé
+                </Badge>
+              )
+            ) : (
+              <Badge variant="outline" className="gap-2 bg-card shadow-md animate-pulse">
+                <MapPin className="h-3 w-3" />
+                Localisation en cours...
+              </Badge>
+            )}
+          </div>
+        )}
+
         {/* Selected lampadaire panel */}
         {selectedLampadaire && !showReportForm && (
           <div className="absolute bottom-4 left-4 right-4 z-[1000] max-w-md mx-auto">
