@@ -385,7 +385,7 @@ export default function Index() {
 
         {/* Zone indicator for non-admin users */}
         {!isAdmin && (
-          <div className="absolute top-4 left-4 z-[1000]">
+          <div className="absolute top-4 right-4 z-[1000]">
             {locationError ? (
               <Badge variant="outline" className="gap-2 bg-card shadow-md border-yellow-500 text-yellow-600">
                 <MapPin className="h-3 w-3" />
