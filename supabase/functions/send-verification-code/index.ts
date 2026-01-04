@@ -77,8 +77,12 @@ const handler = async (req: Request): Promise<Response> => {
     }
 
     // Send verification email
+    const rawFrom = (Deno.env.get("RESEND_FROM") ?? "").trim();
+    // If RESEND_FROM is empty or whitespace, fall back to a known-valid default.
+    const from = rawFrom.length > 0 ? rawFrom : "LampaTrack <onboarding@resend.dev>";
+
     const emailResponse = await resend.emails.send({
-      from: Deno.env.get("RESEND_FROM") ?? "LampaTrack <onboarding@resend.dev>",
+      from,
       to: [email],
       subject: "Code de vérification LampaTrack",
       html: `
