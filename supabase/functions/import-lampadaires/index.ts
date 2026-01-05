@@ -133,7 +133,7 @@ Deno.serve(async (req) => {
     }>();
 
     let skippedInvalid = 0;
-    let duplicatesOverwritten = 0;
+    const duplicateIdentifiers: string[] = [];
 
     for (let idx = 0; idx < geojsonData.features.length; idx++) {
       const feature = geojsonData.features[idx];
@@ -168,7 +168,9 @@ Deno.serve(async (req) => {
 
       // Track duplicates
       if (lampadairesMap.has(identifier)) {
-        duplicatesOverwritten++;
+        if (!duplicateIdentifiers.includes(identifier)) {
+          duplicateIdentifiers.push(identifier);
+        }
       }
 
       lampadairesMap.set(identifier, {
@@ -181,7 +183,7 @@ Deno.serve(async (req) => {
 
     const lampadaires = Array.from(lampadairesMap.values());
 
-    console.log(`Found ${duplicatesOverwritten} duplicate identifiers (overwritten)`);
+    console.log(`Found ${duplicateIdentifiers.length} duplicate identifiers: ${duplicateIdentifiers.slice(0, 10).join(', ')}${duplicateIdentifiers.length > 10 ? '...' : ''}`);
     console.log(`Skipped ${skippedInvalid} entries with invalid coordinates`);
     console.log(`Inserting ${lampadaires.length} unique lampadaires...`);
 
@@ -209,7 +211,11 @@ Deno.serve(async (req) => {
         success: true,
         message: `Imported ${insertedCount} lampadaires`,
         total: geojsonData.features.length,
+        uniqueCount: lampadaires.length,
         inserted: insertedCount,
+        duplicatesCount: duplicateIdentifiers.length,
+        duplicateIdentifiers: duplicateIdentifiers,
+        skippedInvalid: skippedInvalid,
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
