@@ -251,16 +251,26 @@ export function useLampadaireHistory() {
 
   const fetchHistory = async () => {
     setLoading(true);
-    const { data, error } = await supabase
-      .from('lampadaire_history')
-      .select(`
-        *,
-        lampadaire:lampadaires(*)
-      `)
-      .order('created_at', { ascending: false });
+    
+    // Use secure RPC to hide technician_name from non-admins
+    const { data: historyData, error } = await supabase.rpc('get_lampadaire_history_secure');
 
-    if (!error) {
-      setHistory(data as unknown as LampadaireHistory[]);
+    if (!error && historyData) {
+      // Fetch lampadaires separately for the join
+      const lampadaireIds = [...new Set(historyData.map((h: { lampadaire_id: string }) => h.lampadaire_id))];
+      const { data: lampadairesData } = await supabase
+        .from('lampadaires')
+        .select('*')
+        .in('id', lampadaireIds);
+
+      const lampadairesMap = new Map(lampadairesData?.map(l => [l.id, l]) || []);
+
+      const historyWithLampadaires = historyData.map((h: LampadaireHistory) => ({
+        ...h,
+        lampadaire: lampadairesMap.get(h.lampadaire_id) || null,
+      }));
+
+      setHistory(historyWithLampadaires as LampadaireHistory[]);
     }
     setLoading(false);
   };

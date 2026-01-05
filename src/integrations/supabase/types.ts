@@ -207,6 +207,20 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      get_lampadaire_history_secure: {
+        Args: never
+        Returns: {
+          action: string
+          created_at: string
+          id: string
+          intervention_type: string
+          lampadaire_id: string
+          new_status: Database["public"]["Enums"]["lampadaire_status"]
+          performed_by: string
+          previous_status: Database["public"]["Enums"]["lampadaire_status"]
+          technician_name: string
+        }[]
+      }
       get_signalements_secure: {
         Args: never
         Returns: {
