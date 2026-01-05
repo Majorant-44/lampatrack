@@ -124,7 +124,16 @@ Deno.serve(async (req) => {
       console.error('Error deleting existing lampadaires:', deleteError);
     }
 
-    const lampadaires = [];
+    // Use a Map to deduplicate by identifier (keep last occurrence)
+    const lampadairesMap = new Map<string, {
+      identifier: string;
+      latitude: number;
+      longitude: number;
+      status: 'functional';
+    }>();
+
+    let skippedInvalid = 0;
+    let duplicatesOverwritten = 0;
 
     for (let idx = 0; idx < geojsonData.features.length; idx++) {
       const feature = geojsonData.features[idx];
@@ -153,10 +162,16 @@ Deno.serve(async (req) => {
       // Validate coordinates
       if (isNaN(lat) || isNaN(lon) || lat < -90 || lat > 90 || lon < -180 || lon > 180) {
         console.warn(`Invalid coordinates for ${identifier}: lat=${lat}, lon=${lon}`);
+        skippedInvalid++;
         continue;
       }
 
-      lampadaires.push({
+      // Track duplicates
+      if (lampadairesMap.has(identifier)) {
+        duplicatesOverwritten++;
+      }
+
+      lampadairesMap.set(identifier, {
         identifier,
         latitude: lat,
         longitude: lon,
@@ -164,7 +179,11 @@ Deno.serve(async (req) => {
       });
     }
 
-    console.log(`Inserting ${lampadaires.length} lampadaires...`);
+    const lampadaires = Array.from(lampadairesMap.values());
+
+    console.log(`Found ${duplicatesOverwritten} duplicate identifiers (overwritten)`);
+    console.log(`Skipped ${skippedInvalid} entries with invalid coordinates`);
+    console.log(`Inserting ${lampadaires.length} unique lampadaires...`);
 
     // Insert in batches of 100
     const batchSize = 100;
