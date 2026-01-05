@@ -128,20 +128,37 @@ export function useSignalements() {
 
   const fetchSignalements = async () => {
     setLoading(true);
-    const { data, error } = await supabase
-      .from('signalements')
-      .select(`
-        *,
-        lampadaire:lampadaires(*),
-        profile:profiles!signalements_user_id_profiles_fkey(*)
-      `)
-      .order('created_at', { ascending: false });
+    // Use the secure RPC function that hides admin_notes from non-admins
+    const { data: signalementData, error } = await supabase
+      .rpc('get_signalements_secure');
 
     if (error) {
       console.error('Error fetching signalements:', error);
-    } else {
-      setSignalements(data as unknown as Signalement[]);
+      setLoading(false);
+      return;
     }
+
+    // Fetch related lampadaires and profiles separately
+    const signalementIds = signalementData?.map(s => s.id) || [];
+    const lampadaireIds = [...new Set(signalementData?.map(s => s.lampadaire_id) || [])];
+    const userIds = [...new Set(signalementData?.map(s => s.user_id) || [])];
+
+    const [lampadairesResult, profilesResult] = await Promise.all([
+      supabase.from('lampadaires').select('*').in('id', lampadaireIds),
+      supabase.from('profiles').select('*').in('user_id', userIds)
+    ]);
+
+    const lampadairesMap = new Map(lampadairesResult.data?.map(l => [l.id, l]) || []);
+    const profilesMap = new Map(profilesResult.data?.map(p => [p.user_id, p]) || []);
+
+    // Combine the data
+    const enrichedSignalements = signalementData?.map(s => ({
+      ...s,
+      lampadaire: lampadairesMap.get(s.lampadaire_id) || null,
+      profile: profilesMap.get(s.user_id) || null
+    })) || [];
+
+    setSignalements(enrichedSignalements as unknown as Signalement[]);
     setLoading(false);
   };
 
