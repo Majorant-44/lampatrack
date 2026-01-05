@@ -204,7 +204,63 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      signalements_secure: {
+        Row: {
+          admin_notes: string | null
+          cause: string | null
+          created_at: string | null
+          description: string | null
+          id: string | null
+          lampadaire_id: string | null
+          photo_url: string | null
+          processed_at: string | null
+          processed_by: string | null
+          status: Database["public"]["Enums"]["report_status"] | null
+          user_id: string | null
+        }
+        Insert: {
+          admin_notes?: never
+          cause?: string | null
+          created_at?: string | null
+          description?: string | null
+          id?: string | null
+          lampadaire_id?: string | null
+          photo_url?: string | null
+          processed_at?: string | null
+          processed_by?: string | null
+          status?: Database["public"]["Enums"]["report_status"] | null
+          user_id?: string | null
+        }
+        Update: {
+          admin_notes?: never
+          cause?: string | null
+          created_at?: string | null
+          description?: string | null
+          id?: string | null
+          lampadaire_id?: string | null
+          photo_url?: string | null
+          processed_at?: string | null
+          processed_by?: string | null
+          status?: Database["public"]["Enums"]["report_status"] | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "signalements_lampadaire_id_fkey"
+            columns: ["lampadaire_id"]
+            isOneToOne: false
+            referencedRelation: "lampadaires"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "signalements_user_id_profiles_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
     }
     Functions: {
       has_role: {
