@@ -65,6 +65,44 @@ Deno.serve(async (req) => {
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
+    // Verify authentication
+    const authHeader = req.headers.get('Authorization');
+    if (!authHeader) {
+      console.error('No authorization header provided');
+      return new Response(
+        JSON.stringify({ error: 'Unauthorized - No authorization header' }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    const token = authHeader.replace('Bearer ', '');
+    const { data: { user }, error: authError } = await supabase.auth.getUser(token);
+    
+    if (authError || !user) {
+      console.error('Authentication failed:', authError?.message);
+      return new Response(
+        JSON.stringify({ error: 'Unauthorized - Invalid token' }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Check if user is admin
+    const { data: roleData, error: roleError } = await supabase
+      .from('user_roles')
+      .select('role')
+      .eq('user_id', user.id)
+      .single();
+
+    if (roleError || roleData?.role !== 'admin') {
+      console.error('User is not admin:', user.id, roleData?.role);
+      return new Response(
+        JSON.stringify({ error: 'Forbidden - Admin access required' }),
+        { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    console.log('Admin user authenticated:', user.id);
+
     const { geojsonData } = await req.json();
 
     if (!geojsonData || !geojsonData.features) {
