@@ -204,65 +204,25 @@ export type Database = {
       }
     }
     Views: {
-      signalements_secure: {
-        Row: {
-          admin_notes: string | null
-          cause: string | null
-          created_at: string | null
-          description: string | null
-          id: string | null
-          lampadaire_id: string | null
-          photo_url: string | null
-          processed_at: string | null
-          processed_by: string | null
-          status: Database["public"]["Enums"]["report_status"] | null
-          user_id: string | null
-        }
-        Insert: {
-          admin_notes?: never
-          cause?: string | null
-          created_at?: string | null
-          description?: string | null
-          id?: string | null
-          lampadaire_id?: string | null
-          photo_url?: string | null
-          processed_at?: string | null
-          processed_by?: string | null
-          status?: Database["public"]["Enums"]["report_status"] | null
-          user_id?: string | null
-        }
-        Update: {
-          admin_notes?: never
-          cause?: string | null
-          created_at?: string | null
-          description?: string | null
-          id?: string | null
-          lampadaire_id?: string | null
-          photo_url?: string | null
-          processed_at?: string | null
-          processed_by?: string | null
-          status?: Database["public"]["Enums"]["report_status"] | null
-          user_id?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "signalements_lampadaire_id_fkey"
-            columns: ["lampadaire_id"]
-            isOneToOne: false
-            referencedRelation: "lampadaires"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "signalements_user_id_profiles_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["user_id"]
-          },
-        ]
-      }
+      [_ in never]: never
     }
     Functions: {
+      get_signalements_secure: {
+        Args: never
+        Returns: {
+          admin_notes: string
+          cause: string
+          created_at: string
+          description: string
+          id: string
+          lampadaire_id: string
+          photo_url: string
+          processed_at: string
+          processed_by: string
+          status: Database["public"]["Enums"]["report_status"]
+          user_id: string
+        }[]
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
