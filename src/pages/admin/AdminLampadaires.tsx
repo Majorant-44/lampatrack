@@ -25,8 +25,11 @@ import {
   Loader2,
   Search,
   Filter,
-  X
+  X,
+  FileText,
+  Copy
 } from 'lucide-react';
+import { ScrollArea } from '@/components/ui/scroll-area';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import type { Lampadaire, LampadaireStatus } from '@/types/database';
@@ -44,6 +47,14 @@ export default function AdminLampadaires({ lampadaires, onAdd, onUpdate, onDelet
   const [editingLampadaire, setEditingLampadaire] = useState<Lampadaire | null>(null);
   const [repairingLampadaire, setRepairingLampadaire] = useState<Lampadaire | null>(null);
   const [importing, setImporting] = useState(false);
+  const [importReport, setImportReport] = useState<{
+    total: number;
+    uniqueCount: number;
+    inserted: number;
+    duplicatesCount: number;
+    duplicateIdentifiers: string[];
+    skippedInvalid: number;
+  } | null>(null);
   const { toast } = useToast();
   
   // Search and filter state
@@ -98,9 +109,14 @@ export default function AdminLampadaires({ lampadaires, onAdd, onUpdate, onDelet
 
         if (error) throw error;
 
-        toast({
-          title: 'Import réussi',
-          description: `${data.inserted} lampadaires importés sur ${data.total}`,
+        // Set the import report to show dialog
+        setImportReport({
+          total: data.total,
+          uniqueCount: data.uniqueCount,
+          inserted: data.inserted,
+          duplicatesCount: data.duplicatesCount,
+          duplicateIdentifiers: data.duplicateIdentifiers || [],
+          skippedInvalid: data.skippedInvalid || 0,
         });
 
         if (onRefresh) {
@@ -189,7 +205,85 @@ export default function AdminLampadaires({ lampadaires, onAdd, onUpdate, onDelet
   };
 
   return (
-    <Card>
+    <>
+      {/* Import Report Dialog */}
+      <Dialog open={importReport !== null} onOpenChange={(open) => !open && setImportReport(null)}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <FileText className="h-5 w-5" />
+              Rapport d'import
+            </DialogTitle>
+            <DialogDescription>
+              Résumé de l'importation GeoJSON
+            </DialogDescription>
+          </DialogHeader>
+          {importReport && (
+            <div className="space-y-4">
+              {/* Summary stats */}
+              <div className="grid grid-cols-2 gap-3">
+                <div className="bg-muted rounded-lg p-3 text-center">
+                  <div className="text-2xl font-bold">{importReport.total}</div>
+                  <div className="text-xs text-muted-foreground">Entrées dans le fichier</div>
+                </div>
+                <div className="bg-green-500/10 rounded-lg p-3 text-center">
+                  <div className="text-2xl font-bold text-green-600">{importReport.inserted}</div>
+                  <div className="text-xs text-muted-foreground">Lampadaires importés</div>
+                </div>
+                <div className="bg-orange-500/10 rounded-lg p-3 text-center">
+                  <div className="text-2xl font-bold text-orange-600">{importReport.duplicatesCount}</div>
+                  <div className="text-xs text-muted-foreground">Doublons détectés</div>
+                </div>
+                <div className="bg-red-500/10 rounded-lg p-3 text-center">
+                  <div className="text-2xl font-bold text-red-600">{importReport.skippedInvalid}</div>
+                  <div className="text-xs text-muted-foreground">Coordonnées invalides</div>
+                </div>
+              </div>
+
+              {/* Duplicates list */}
+              {importReport.duplicatesCount > 0 && (
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <Label className="text-sm font-medium">Identifiants en double ({importReport.duplicatesCount})</Label>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => {
+                        navigator.clipboard.writeText(importReport.duplicateIdentifiers.join(', '));
+                        toast({
+                          title: 'Copié',
+                          description: 'Liste des doublons copiée dans le presse-papier',
+                        });
+                      }}
+                    >
+                      <Copy className="h-4 w-4 mr-1" />
+                      Copier
+                    </Button>
+                  </div>
+                  <ScrollArea className="h-32 rounded-md border bg-muted/50 p-2">
+                    <div className="flex flex-wrap gap-1">
+                      {importReport.duplicateIdentifiers.map((id, idx) => (
+                        <Badge key={idx} variant="secondary" className="text-xs">
+                          {id}
+                        </Badge>
+                      ))}
+                    </div>
+                  </ScrollArea>
+                  <p className="text-xs text-muted-foreground">
+                    Ces identifiants apparaissaient plusieurs fois. Seule la dernière occurrence de chaque a été conservée.
+                  </p>
+                </div>
+              )}
+
+              <Button className="w-full" onClick={() => setImportReport(null)}>
+                Fermer
+              </Button>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      <Card>
       <CardHeader>
         <div className="flex flex-col gap-4">
           <div className="flex items-center justify-between">
@@ -478,5 +572,6 @@ export default function AdminLampadaires({ lampadaires, onAdd, onUpdate, onDelet
         </div>
       </CardContent>
     </Card>
+    </>
   );
 }
