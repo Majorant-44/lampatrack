@@ -244,6 +244,10 @@ export type Database = {
         }
         Returns: boolean
       }
+      user_owns_report_photo: {
+        Args: { object_name: string }
+        Returns: boolean
+      }
     }
     Enums: {
       app_role: "admin" | "user"
