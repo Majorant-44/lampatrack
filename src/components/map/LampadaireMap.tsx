@@ -44,7 +44,7 @@ export default function LampadaireMap({
 
     map.current = L.map(mapContainer.current, {
       center: [14.6937, -17.4441], // Dakar
-      zoom: 13,
+      zoom: 16,
       zoomControl: true,
     });
 
@@ -112,15 +112,15 @@ export default function LampadaireMap({
             }
           </style>
           <div style="
-            width: ${isSelected ? '28px' : '24px'};
-            height: ${isSelected ? '28px' : '24px'};
+            width: ${isSelected ? '14px' : '10px'};
+            height: ${isSelected ? '14px' : '10px'};
             border-radius: 50%;
             ${selectedStyles}
             transition: all 0.3s ease;
           "></div>
         `,
-        iconSize: [isSelected ? 28 : 24, isSelected ? 28 : 24],
-        iconAnchor: [isSelected ? 14 : 12, isSelected ? 14 : 12],
+        iconSize: [isSelected ? 14 : 10, isSelected ? 14 : 10],
+        iconAnchor: [isSelected ? 7 : 5, isSelected ? 7 : 5],
       });
 
       const marker = L.marker([lampadaire.latitude, lampadaire.longitude], { 
