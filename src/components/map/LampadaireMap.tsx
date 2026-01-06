@@ -100,15 +100,15 @@ export default function LampadaireMap({
       const selectedStyles = isSelected 
         ? `
             background: #FBBF24 !important;
-            border: 4px solid white;
-            box-shadow: 0 0 0 4px #FBBF24, 0 0 20px 8px rgba(251, 191, 36, 0.6), 0 0 40px 16px rgba(251, 191, 36, 0.3);
+            border: 2px solid white;
+            box-shadow: 0 0 0 2px #FBBF24, 0 0 20px 8px rgba(251, 191, 36, 0.6), 0 0 40px 16px rgba(251, 191, 36, 0.3);
             transform: scale(1.4);
             animation: pulse 1.5s ease-in-out infinite;
           `
         : `
             background: ${markerColor};
-            border: 3px solid white;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+            border: 1px solid white;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.3);
           `;
       
       const icon = L.divIcon({
