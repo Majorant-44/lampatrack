@@ -44,8 +44,9 @@ export default function LampadaireMap({
 
     map.current = L.map(mapContainer.current, {
       center: [14.6937, -17.4441], // Dakar
-      zoom: 16,
+      zoom: 13,
       zoomControl: true,
+      maxZoom: 22,
     });
 
     tileLayerRef.current = L.tileLayer(TILE_LAYERS.standard.url, {
