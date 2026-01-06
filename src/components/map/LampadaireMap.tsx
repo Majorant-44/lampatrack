@@ -16,10 +16,12 @@ const TILE_LAYERS = {
   standard: {
     url: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
     attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+    maxZoom: 19,
   },
   satellite: {
     url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
     attribution: '&copy; <a href="https://www.esri.com/">Esri</a> - World Imagery',
+    maxZoom: 19,
   },
 };
 
@@ -43,14 +45,15 @@ export default function LampadaireMap({
     if (!mapContainer.current || map.current) return;
 
     map.current = L.map(mapContainer.current, {
-      center: [14.6937, -17.4441], // Dakar
+      center: [14.7833, -17.3500], // Yeumbeul
       zoom: 13,
       zoomControl: true,
-      maxZoom: 22,
+      maxZoom: 19,
     });
 
     tileLayerRef.current = L.tileLayer(TILE_LAYERS.standard.url, {
       attribution: TILE_LAYERS.standard.attribution,
+      maxZoom: TILE_LAYERS.standard.maxZoom,
     }).addTo(map.current);
 
     return () => {
@@ -72,6 +75,7 @@ export default function LampadaireMap({
     const layer = TILE_LAYERS[mapStyle];
     tileLayerRef.current = L.tileLayer(layer.url, {
       attribution: layer.attribution,
+      maxZoom: layer.maxZoom,
     }).addTo(map.current);
   }, [mapStyle]);
 
